@@ -1,7 +1,7 @@
 {
   "name": "Menù Asilo Corsico",
   "short_name": "Menù Asilo",
-  "start_url": "calendario.html",
+  "start_url": "mensa.html",
   "display": "standalone",
   "background_color": "#f4f4f9",
   "theme_color": "#ff4757",
