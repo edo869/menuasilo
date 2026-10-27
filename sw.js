@@ -1,6 +1,6 @@
 const CACHE_NAME = 'menu-asilo-v1';
 const ASSETS = [
-  'calendario.html',
+  'mensa.html',
   'manifest.json'
 ];
 
