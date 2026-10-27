@@ -1,6 +1,6 @@
-const CACHE_NAME = 'menu-asilo-v1';
+const CACHE_NAME = 'menu-asilo-v2';
 const ASSETS = [
-  'mensa.html',
+  'index.html',
   'manifest.json'
 ];
 
