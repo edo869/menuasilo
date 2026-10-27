@@ -1,17 +1,16 @@
 {
-  "name": "Menu Asilo Corsico",
-  "short_name": "Menu Asilo",
-  "start_url": "mensa.html",
+  "name": "Menù Asilo Corsico",
+  "short_name": "Menù Asilo",
+  "start_url": "calendario.html",
   "display": "standalone",
   "background_color": "#f4f4f9",
   "theme_color": "#ff4757",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://github.io",
+      "src": "https://flaticon.com",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
+      "type": "image/png"
     }
   ]
 }
