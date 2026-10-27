@@ -1,7 +1,7 @@
 {
   "name": "Menu Asilo Dante",
   "short_name": "Menu Asilo",
-  "start_url": "./mensa.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f4f4f9",
