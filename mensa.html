@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Asilo Eterno</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f4f4f9; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; }
+        .calendar-header { display: flex; align-items: center; justify-content: space-between; max-width: 400px; width: 100%; margin: 10px 0; }
+        h2 { color: #333; margin: 0; text-transform: capitalize; font-size: 1.4em; }
+        .nav-btn { background: white; border: 1px solid #ced6e0; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; font-size: 1.1em; color: #ff4757; box-shadow: 0 2px 5px rgba(0,0,0,0.05); user-select: none; }
+        .nav-btn:active { background: #f1f2f6; }
+        .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; max-width: 400px; width: 100%; background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); box-sizing: border-box; margin-bottom: 15px; }
+        .day-name { text-align: center; font-weight: bold; color: #666; font-size: 0.9em; }
+        .day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 10px; font-size: 1em; color: #333; cursor: pointer; transition: background 0.2s; }
+        .day:not(.empty):hover { background-color: #e1e2e6; }
+        .day.today { background: linear-gradient(135deg, #ff4757, #ff6b81); color: white; font-weight: bold; font-size: 1.2em; transform: scale(1.1); box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4); z-index: 10; }
+        .day.selected { border: 2px solid #ff4757; box-sizing: border-box; background-color: #fff5f6; }
+        .empty { visibility: hidden; cursor: default; }
+        .menu-box { max-width: 400px; width: 100%; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); border-left: 6px solid #ff4757; box-sizing: border-box; }
+        .menu-title { font-size: 1.2em; font-weight: bold; color: #2f3542; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .menu-week { font-size: 0.75em; background: #f1f2f6; padding: 3px 8px; border-radius: 20px; color: #57606f; }
+        .selected-day-container { background: #fff5f6; padding: 12px; border-radius: 10px; border: 1px dashed #ffb3b9; margin-bottom: 15px; }
+        .selected-day-title { font-size: 1.1em; font-weight: bold; color: #ff4757; margin-bottom: 6px; text-transform: capitalize; }
+        .menu-item { font-size: 1.05em; color: #2f3542; line-height: 1.4; margin: 4px 0; font-weight: 500; }
+        .merenda { margin-top: 8px; padding-top: 6px; border-top: 1px dotted #ffb3b9; font-style: italic; color: #57606f; font-size: 0.95em; }
+        .week-overview-title { font-size: 0.9em; font-weight: bold; color: #747d8c; margin: 15px 0 8px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+        .other-day-row { padding: 8px 0; border-bottom: 1px solid #f1f2f6; font-size: 0.88em; color: #57606f; }
+        .other-day-row:last-child { border-bottom: none; }
+        .other-day-name { font-weight: bold; color: #2f3542; text-transform: capitalize; margin-bottom: 2px; }
+    </style>
+	<link rel="manifest" href="manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
+</head>
+<body>
+    <div class="calendar-header">
+        <div class="nav-btn" onclick="changeMonth(-1)">&lt;</div>
+        <h2 id="month-year"></h2>
+        <div class="nav-btn" onclick="changeMonth(1)">&gt;</div>
+    </div>
+    <div class="calendar" id="calendar"></div>
+    <div class="menu-box">
+        <div class="menu-title">
+            <span>🍽️ Menù Asilo</span>
+            <span class="menu-week" id="menu-week-label">Settimana --</span>
+        </div>
+        <div id="menu-content">Caricamento...</div>
+    </div>
+    <script>
+        const menuData = {
+            1: {
+                1: { nome: "Lunedì", piatti: ["Ravioli di carne in brodo", "Formaggio Quick", "Carote julienne", "Pane", "Frutta fresca"], merenda: "Budino alla vaniglia" },
+                2: { nome: "Martedì", piatti: ["Risotto alla milanese", "Hamburger di carne", "Insalata verde", "Pane", "Frutta fresca"], merenda: "Tè e tortino allo yogurt" },
+                3: { nome: "Mercoledì", piatti: ["Pasta al ragù di tonno", "Frittata ricotta e zucchine", "Fagiolini all'olio", "Pane", "Yogurt alla frutta"], merenda: "Succo di frutta e crostatina al cioccolato" },
+                4: { nome: "Giovedì", piatti: ["Passato di fagioli cannellini con pasta", "Bocconcini/Fusi di pollo gratinati", "Purè di patate", "Pane", "Frutta fresca"], merenda: "Tè e focaccia" },
+                5: { nome: "Venerdì", piatti: ["Pizza margherita / con parmigiano", "Mozzarella (½ porzione)", "Crudité di carote e finocchi", "Pane", "Budino vaniglia/cioccolato"], merenda: "Succo con cracker" }
+            },
+            2: {
+                1: { nome: "Lunedì", piatti: ["Pasta agli aromi", "Tonno", "Carote brasate", "Pane", "Frutta fresca"], merenda: "Budino al cioccolato" },
+                2: { nome: "Martedì", piatti: ["Lasagna al ragù", "Mozzarella (½ porzione)", "Insalata mista", "Pane", "Yogurt alla frutta"], merenda: "Tè e cracker" },
+                3: { nome: "Mercoledì", piatti: ["Crema di ceci con pasta", "Arrosto di tacchino al limone", "Patate al forno", "Pane", "Frutta fresca"], merenda: "Succo e marmellata" },
+                4: { nome: "Giovedì", piatti: ["Risotto alla zucca", "Cotoletta di lonza", "Piselli brasati", "Pane", "Mousse di frutta"], merenda: "Tè e tortino allo yogurt" },
+                5: { nome: "Venerdì", piatti: ["Passato di verdure con ditalini", "Platessa impanata", "Insalata verde", "Pane", "Frutta fresca"], merenda: "Succo e biscotti" }
+            },
+            3: {
+                1: { nome: "Lunedì", piatti: ["Passato di zucchine e cavolfiori con pasta", "Prosciutto cotto", "Fagiolini all'olio", "Pane", "Frutta fresca"], merenda: "Budino alla vaniglia" },
+                2: { nome: "Martedì", piatti: ["Risotto con totani e cozze", "Frittata con patate", "Insalata verde", "Pane", "Yogurt alla frutta"], merenda: "Tè e tortino allo yogurt" },
+                3: { nome: "Mercoledì", piatti: ["Passato di fagioli cannellini con pasta", "Hamburger di manzo", "Purè di patate", "Pane", "Frutta fresca"], merenda: "Succo di frutta e crostatina al cioccolato" },
+                4: { nome: "Giovedì", piatti: ["Pizza margherita / con parmigiano", "Mozzarella (½ porzione)", "Crudité di carote e finocchi", "Pane", "Frutta fresca"], merenda: "Tè e cracker" },
+                5: { nome: "Venerdì", piatti: ["Pasta al pomodoro", "Hamburger di merluzzo", "Carote brasate", "Pane", "Budino vaniglia/cioccolato"], merenda: "Succo con focaccia" }
+            },
+            4: {
+                1: { nome: "Lunedì", piatti: ["Pasta mimosa", "Tonno e uovo con maionese", "Insalata mista con finocchi", "Pane", "Frutta fresca"], merenda: "Budino al cioccolato" },
+                2: { nome: "Martedì", piatti: ["Pasta o Gnocchi al pomodoro", "Cotoletta di pollo", "Carote brasate", "Pane", "Torta"], merenda: "Tè e cracker" },
+                3: { nome: "Mercoledì", piatti: ["Riso all'inglese", "Primosole", "Insalata mista (verde e carote)", "Pane", "Yogurt alla frutta"], merenda: "Succo e pane con cioccolato/crema spalmabile" },
+                4: { nome: "Giovedì", piatti: ["Pasta pomodoro e lenticchie", "Arrosto di lonza", "Patate al forno", "Pane", "Frutta fresca"], merenda: "Tè e tortino allo yogurt" },
+                5: { nome: "Venerdì", piatti: ["Gnocchetti sardi con ragù di merluzzo", "Hamburger/Polpette di patate e formaggio", "Fagiolini all'olio", "Pane", "Frutta fresca"], merenda: "Succo e biscotti" }
+            }
+        };
+                // Logica blindata: aggancia il Lunedì della Settimana 4 attuale (26 Ottobre 2026)
+        function getMenuWeek(date) {
+            const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const referenceMonday = new Date(2026, 9, 26); // Lunedì 26 Ottobre 2026
+            
+            // Trova il Lunedì della settimana in esame
+            const dayOfWeek = d.getDay();
+            const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+            const currentMonday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - daysToSubtract);
+            
+            // Calcola la distanza in giorni e poi in settimane piene
+            const diffTime = currentMonday.getTime() - referenceMonday.getTime();
+            const diffWeeks = Math.round(diffTime / (1000 * 60 * 60 * 24 * 7));
+            
+            // Calcola il ciclo partendo da 4
+            let week = (4 + (diffWeeks % 4)) % 4;
+            if (week === 0) week = 4;
+            return week;
+        }
+
+        let today = new Date();
+        let currentDisplayedMonth = today.getMonth();
+        let currentDisplayedYear = today.getFullYear();
+
+        function changeMonth(direction) {
+            currentDisplayedMonth += direction;
+            if (currentDisplayedMonth > 11) {
+                currentDisplayedMonth = 0;
+                currentDisplayedYear++;
+            } else if (currentDisplayedMonth < 0) {
+                currentDisplayedMonth = 11;
+                currentDisplayedYear--;
+            }
+            createCalendar(currentDisplayedMonth, currentDisplayedYear);
+        }
+
+        function updateMenuDisplay(date) {
+            const dayOfWeek = date.getDay(); 
+            const menuContent = document.getElementById("menu-content");
+            const menuWeekLabel = document.getElementById("menu-week-label");
+            const currentWeekNum = getMenuWeek(date);
+            
+            menuWeekLabel.innerText = "Settimana " + currentWeekNum;
+
+            const dayNamesLong = ["Domenica", "Lunedì", "Martedì", "Mercoledì", "Giovedì", "Venerdì", "Sabato"];
+            const formattedDateString = dayNamesLong[dayOfWeek] + " " + date.getDate();
+
+            let html = "";
+
+            // 1. BLOCCO GIORNO IN PRIMO PIANO
+            html += "<div class='selected-day-container'>";
+            html += "<div class='selected-day-title'>" + formattedDateString + "</div>";
+            
+            if (dayOfWeek === 0 || dayOfWeek === 6) {
+                html += "<div>Weekend - Nessun menù scolastico previsto. ☀️</div></div>";
+            } else {
+                const selectedMenu = menuData[currentWeekNum][dayOfWeek];
+                if (selectedMenu) {
+                    selectedMenu.piatti.forEach(function(piatto) {
+                        html += "<div class='menu-item'>• " + piatto + "</div>";
+                    });
+                    html += "<div class='merenda'><strong>Merenda:</strong> " + selectedMenu.merenda + "</div>";
+                }
+                html += "</div>"; 
+                
+                // 2. BLOCCO RESTO DELLA SETTIMANA IN PICCOLO
+                html += "<div class='week-overview-title'>Resto della settimana</div>";
+                for (let d = 1; d <= 5; d++) {
+                    if (d !== dayOfWeek) {
+                        const otherMenu = menuData[currentWeekNum][d];
+                        if (otherMenu) {
+                            html += "<div class='other-day-row'>";
+                            html += "<div class='other-day-name'>" + otherMenu.nome + "</div>";
+                            html += "<div>" + otherMenu.piatti.join(", ") + " <span style='color:#a4b0be;'>| Merenda: " + otherMenu.merenda + "</span></div>";
+                            html += "</div>";
+                        }
+                    }
+                }
+            }
+            
+            menuContent.innerHTML = html;
+        }
+
+        function createCalendar(month, year) {
+            const monthNames = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
+            document.getElementById("month-year").innerText = monthNames[month] + " " + year;
+
+            const calendarContainer = document.getElementById("calendar");
+            calendarContainer.innerHTML = "";
+
+            const daysOfWeek = ["Lu", "Ma", "Me", "Gi", "Ve", "Sa", "Do"];
+            daysOfWeek.forEach(function(day) {
+                const dayNameElement = document.createElement("div");
+                dayNameElement.className = "day-name";
+                dayNameElement.innerText = day;
+                calendarContainer.appendChild(dayNameElement);
+            });
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            for (let i = 0; i < startOffset; i++) {
+                const emptyCell = document.createElement("div");
+                emptyCell.className = "day empty";
+                calendarContainer.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement("div");
+                dayCell.className = "day";
+                dayCell.innerText = day;
+
+                if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+                    dayCell.classList.add("today");
+                }
+
+                dayCell.addEventListener("click", function() {
+                    const allDays = calendarContainer.querySelectorAll(".day");
+                    allDays.forEach(d => d.classList.remove("selected"));
+                    
+                    if (!dayCell.classList.contains("empty")) {
+                        dayCell.classList.add("selected");
+                        const selectedDate = new Date(year, month, day);
+                        updateMenuDisplay(selectedDate);
+                    }
+                });
+
+                calendarContainer.appendChild(dayCell);
+            }
+        }
+
+        createCalendar(currentDisplayedMonth, currentDisplayedYear);
+        updateMenuDisplay(today);
+    </script>
+</body>
+</html>
